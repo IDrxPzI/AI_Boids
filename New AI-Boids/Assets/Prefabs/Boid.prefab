@@ -924,11 +924,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   position: {x: 0, y: 0, z: 0}
   forward: {x: 0, y: 0, z: 0}
-  avgFlockHeading: {x: 0, y: 0, z: 0}
-  avgAvoidanceHeading: {x: 0, y: 0, z: 0}
-  centreOfFlockmates: {x: 0, y: 0, z: 0}
-  numPerceivedFlockmates: 0
-  alignmentForce: {x: 0, y: 0, z: 0}
-  cohesionForce: {x: 0, y: 0, z: 0}
-  seperationForce: {x: 0, y: 0, z: 0}
+  avgNeighbourDirection: {x: 0, y: 0, z: 0}
+  avgAvoidanceDirection: {x: 0, y: 0, z: 0}
+  centerOfNeighbours: {x: 0, y: 0, z: 0}
+  numNeighbours: 0
   cachedTransform: {fileID: 0}

@@ -7,7 +7,7 @@ public class Spawner : MonoBehaviour
     [SerializeField] private Boid prefab;
     [SerializeField] private float spawnRadius = 10;
     [SerializeField] private int spawnCount = 10;
-    
+
     [SerializeField] private Color color;
     [SerializeField, Range(0, 1)] private float alpha;
 
@@ -20,7 +20,6 @@ public class Spawner : MonoBehaviour
             Boid boid = Instantiate(prefab);
             boid.transform.position = pos;
             boid.transform.forward = Random.insideUnitSphere;
-            
         }
     }
 

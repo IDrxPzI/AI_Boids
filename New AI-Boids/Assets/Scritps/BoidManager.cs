@@ -4,25 +4,23 @@ using UnityEngine;
 
 public class BoidManager : MonoBehaviour
 {
-    //const int threadGroupSize = 1024;
+    [SerializeField] private BoidSettings settings;
+    [SerializeField] private float viewRadius;
 
+    private Boid[] boids;
     private int goldenNumber = 0;
-    public float viewRadius;
 
-    public BoidSettings settings;
-
-    // public ComputeShader compute;
-    Boid[] boids;
 
     void Start()
     {
         boids = FindObjectsOfType<Boid>();
-        foreach (Boid b in boids)
+        foreach (Boid boid in boids)
         {
-            b.Initialize(settings, null);
+            boid.Initialize(settings);
         }
     }
 
+    //update direction/position of the boids
     void Update()
     {
         if (boids != null)
@@ -41,18 +39,18 @@ public class BoidManager : MonoBehaviour
                 if (goldenNumber != i)
                 {
                     Boid boidB = boids[i];
-                    Vector3 offset = boidB.position - boids[goldenNumber].position;
+                    Vector3 offset = boidB.position - boids[i].position;
                     float sqrDst = offset.x * offset.x + offset.y * offset.y + offset.z * offset.z;
 
                     if (sqrDst < viewRadius * viewRadius)
                     {
-                        boids[goldenNumber].numPerceivedFlockmates += 1;
-                        boids[goldenNumber].avgFlockHeading += boidB.cachedTransform.position;
-                        boids[goldenNumber].centreOfFlockmates += boidB.position;
+                        boids[i].numNeighbours += 1;
+                        boids[i].avgNeighbourDirection += boidData[i].direction;
+                        boids[i].centerOfNeighbours += boidData[i].position;
 
                         if (sqrDst < settings.avoidanceRadius * settings.avoidanceRadius)
                         {
-                            boids[goldenNumber].seperationForce -= offset / sqrDst;
+                            boids[i].avgAvoidanceDirection -= offset / sqrDst;
                         }
                     }
                 }
@@ -60,10 +58,10 @@ public class BoidManager : MonoBehaviour
 
             for (int i = 0; i < boids.Length; i++)
             {
-                boids[i].avgFlockHeading = boidData[i].flockHeading;
-                boids[i].centreOfFlockmates = boidData[i].flockCentre;
-                boids[i].avgAvoidanceHeading = boidData[i].avoidanceHeading;
-                boids[i].numPerceivedFlockmates = boidData[i].numFlockmates;
+                boids[i].avgNeighbourDirection = boidData[i].neighbourDirection;
+                boids[i].centerOfNeighbours = boidData[i].NeighbourCenter;
+                boids[i].avgAvoidanceDirection = boidData[i].avoidanceDirection;
+                boids[i].numNeighbours = boidData[i].numNeighbours;
 
                 boids[i].UpdateBoid();
             }
@@ -75,14 +73,9 @@ public class BoidManager : MonoBehaviour
         public Vector3 position;
         public Vector3 direction;
 
-        public Vector3 flockHeading;
-        public Vector3 flockCentre;
-        public Vector3 avoidanceHeading;
-        public int numFlockmates;
-
-        public static int Size
-        {
-            get { return sizeof(float) * 3 * 5 + sizeof(int); }
-        }
+        public Vector3 neighbourDirection;
+        public Vector3 NeighbourCenter;
+        public Vector3 avoidanceDirection;
+        public int numNeighbours;
     }
 }

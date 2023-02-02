@@ -1,59 +1,62 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Boid : MonoBehaviour
 {
     BoidSettings settings;
 
+    Vector3 velocity;
+    Vector3 acceleration;
+    
+    private Transform localTransform;
+    
+    private Vector3 alignmentForce;
+    private Vector3 cohesionForce;
+    private Vector3 seperationForce;
+    private Vector3 direction;
+    
     [HideInInspector] public Vector3 position;
     [HideInInspector] public Vector3 forward;
-    Vector3 velocity;
-
-    Vector3 acceleration;
-    [HideInInspector] public Vector3 avgFlockHeading;
-    [HideInInspector] public Vector3 avgAvoidanceHeading;
-    [HideInInspector] public Vector3 centreOfFlockmates;
-    [HideInInspector] public int numPerceivedFlockmates;
-
-    public Vector3 alignmentForce;
-    public Vector3 cohesionForce;
-    public Vector3 seperationForce;
-
-    public Transform cachedTransform;
-    Transform target;
+    [HideInInspector] public Vector3 avgNeighbourDirection;
+    [HideInInspector] public Vector3 avgAvoidanceDirection;
+    [HideInInspector] public Vector3 centerOfNeighbours;
+    [HideInInspector] public int numNeighbours;
 
     void Awake()
     {
-        cachedTransform = transform;
+        localTransform = transform;
     }
 
-    public void Initialize(BoidSettings settings, Transform target)
+    public void Initialize(BoidSettings _settings)
     {
-        this.target = target;
-        this.settings = settings;
+        this.settings = _settings;
 
-        position = cachedTransform.position;
-        forward = cachedTransform.forward;
+        position = localTransform.position;
+        forward = localTransform.forward;
 
-        float startSpeed = (settings.minSpeed + settings.maxSpeed) / 2;
+        float startSpeed = (_settings.minSpeed + _settings.maxSpeed) / 2;
         velocity = transform.forward * startSpeed;
     }
-
+    
+    /// <summary>
+    /// update direction,position,speed of the Boid
+    /// </summary>
     public void UpdateBoid()
     {
         Vector3 acceleration = Vector3.zero;
 
-        if (numPerceivedFlockmates != 0)
+        if (numNeighbours != 0)
         {
-            centreOfFlockmates /= numPerceivedFlockmates;
+            centerOfNeighbours /= numNeighbours;
 
-            Vector3 offsetToFlockmatesCentre = (centreOfFlockmates - position);
+            Vector3 offsetToNeighboursCenter = (centerOfNeighbours - position);
 
-            
-            alignmentForce = SteerTowards(avgFlockHeading) * settings.Alignment;
-            cohesionForce = SteerTowards(offsetToFlockmatesCentre) * settings.Cohesion;
-            seperationForce = SteerTowards(avgAvoidanceHeading) * settings.Separation;
+
+            alignmentForce = SteerTowards(avgNeighbourDirection) * settings.Alignment;
+            cohesionForce = SteerTowards(offsetToNeighboursCenter) * settings.Cohesion;
+            seperationForce = SteerTowards(avgAvoidanceDirection) * settings.Separation;
 
             acceleration += alignmentForce;
             acceleration += cohesionForce;
@@ -62,47 +65,47 @@ public class Boid : MonoBehaviour
 
         if (IsHeadingForCollision())
         {
-            Vector3 collisionAvoidDir = ObstacleRays();
-            Vector3 collisionAvoidForce = SteerTowards(collisionAvoidDir) * settings.avoidCollisionWeight;
+            Vector3 collisionAvoidDiraction = ObstacleRays();
+            Vector3 collisionAvoidForce = SteerTowards(collisionAvoidDiraction) * settings.AvoidCollision;
             acceleration += collisionAvoidForce;
         }
 
         velocity += acceleration * Time.deltaTime;
         float speed = velocity.magnitude;
-        Vector3 dir = velocity / speed;
+        direction = velocity / speed;
         speed = Mathf.Clamp(speed, settings.minSpeed, settings.maxSpeed);
-        velocity = dir * speed;
+        velocity = direction * speed;
 
-        cachedTransform.position += velocity * Time.deltaTime;
-        cachedTransform.forward = dir;
-        position = cachedTransform.position;
-        forward = dir;
+        localTransform.position += velocity * Time.deltaTime;
+        localTransform.forward = direction;
+        position = localTransform.position;
+        forward = direction;
     }
 
+    //Raycast forward to check for collision
     bool IsHeadingForCollision()
     {
         RaycastHit hit;
-        if (Physics.SphereCast(position, settings.boundsRadius, forward, out hit, settings.collisionAvoidDst,
+        if (Physics.SphereCast(position, settings.RayCastRadius, forward, out hit, settings.AvoidCollisionDistance,
                 settings.obstacleMask))
         {
             return true;
         }
-        else
-        {
-        }
 
         return false;
     }
-
+    
+//Raycast in every direction
     Vector3 ObstacleRays()
     {
         Vector3[] rayDirections = BoidHelper.directions;
 
         for (int i = 0; i < rayDirections.Length; i++)
         {
-            Vector3 dir = cachedTransform.TransformDirection(rayDirections[i]);
+            Vector3 dir = localTransform.TransformDirection(rayDirections[i]);
             Ray ray = new Ray(position, dir);
-            if (!Physics.SphereCast(ray, settings.boundsRadius, settings.collisionAvoidDst, settings.obstacleMask))
+            if (!Physics.SphereCast(ray, settings.RayCastRadius, settings.AvoidCollisionDistance,
+                    settings.obstacleMask))
             {
                 return dir;
             }
@@ -110,10 +113,11 @@ public class Boid : MonoBehaviour
 
         return forward;
     }
-
-    Vector3 SteerTowards(Vector3 vector)
+    
+    
+    public Vector3 SteerTowards(Vector3 _vector)
     {
-        Vector3 v = vector.normalized * settings.maxSpeed - velocity;
+        Vector3 v = _vector.normalized * settings.maxSpeed - velocity;
         return Vector3.ClampMagnitude(v, settings.maxSteerForce);
     }
 }
